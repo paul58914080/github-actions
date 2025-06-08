@@ -27,7 +27,7 @@ jobs:
             echo "VERSION=${{ github.event.inputs.semantic_version }}" >> $GITHUB_ENV
           else
             echo "Using date-timestamp-commit versioning"
-            echo "VERSION=$(date +%Y%m%d%H%M%S)-${GITHUB_SHA::8}" >> $GITHUB_ENV
+            echo "VERSION=$(date +%Y%m%d-%H%M%S)-${GITHUB_SHA::7}" >> $GITHUB_ENV
           fi
       - name: Output version
         run: |
