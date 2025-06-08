@@ -18,17 +18,19 @@ on:
 jobs:
   initialize-version:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.init_version.outputs.version }}
     steps:
       - name: Initialize version
         id: init_version
         run: |
           if [ "${{ github.event.inputs.versioning }}" = "semantic" ]; then
             echo "Using semantic versioning"
-            echo "VERSION=${{ github.event.inputs.semantic_version }}" >> $GITHUB_ENV
+            echo "version=${{ github.event.inputs.semantic_version }}" >> $GITHUB_OUTPUT
           else
             echo "Using date-timestamp-commit versioning"
-            echo "VERSION=$(date +%Y%m%d-%H%M%S)-${GITHUB_SHA::7}" >> $GITHUB_ENV
+            echo "version=$(date +%Y%m%d-%H%M%S)-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
           fi
       - name: Output version
         run: |
-          echo "Initialized version: ${{ env.VERSION }}"
+          echo "Initialized version: ${{ steps.init_version.outputs.version }}"
