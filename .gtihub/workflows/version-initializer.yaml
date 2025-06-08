@@ -1,0 +1,35 @@
+name: version-initializer
+on:
+  workflow_dispatch:
+    inputs:
+      versioning:
+        description: 'Versioning strategy to use'
+        type: choice
+        options:
+          - semantic
+          - date-timestamp-commit
+        default: date-timestamp-commit
+      semantic_version:
+        if: ${{ github.event.inputs.versioning == 'semantic' }}
+        description: 'Semantic version to use (only if semantic versioning is selected)'
+        type: string
+        default: '1.0.0'
+        required: false
+
+jobs:
+  initialize-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Initialize version
+        id: init_version
+        run: |
+          if [ "${{ github.event.inputs.versioning }}" = "semantic" ]; then
+            echo "Using semantic versioning"
+            echo "VERSION=${{ github.event.inputs.semantic_version }}" >> $GITHUB_ENV
+          else
+            echo "Using date-timestamp-commit versioning"
+            echo "VERSION=$(date +%Y%m%d%H%M%S)-${GITHUB_SHA::8}" >> $GITHUB_ENV
+          fi
+      - name: Output version
+        run:
+          echo "Initialized version: ${{ env.VERSION }}"
