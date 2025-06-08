@@ -10,7 +10,6 @@ on:
           - date-timestamp-commit
         default: date-timestamp-commit
       semantic_version:
-        if: ${{ github.event.inputs.versioning == 'semantic' }}
         description: 'Semantic version to use (only if semantic versioning is selected)'
         type: string
         default: '1.0.0'
