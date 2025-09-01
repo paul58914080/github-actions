@@ -1,0 +1,49 @@
+name: Issue Attachment Unarchiver
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  process-attachment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract attachment URL from issue body
+        id: extract_url
+        run: |
+          echo "${{ github.event.issue.body }}" > issue_body.txt
+          # Extract first URL ending with .zip or .tar.gz
+          url=$(grep -oE 'https?://[^ ]+\.(zip|tar\.gz)' issue_body.txt | head -n 1)
+          echo "Found URL: $url"
+          echo "url=$url" >> $GITHUB_OUTPUT
+      - name: Download attachment (authenticated)
+        if: steps.extract_url.outputs.url != ''
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Try authenticated download first
+          curl -L -H "Authorization: Bearer $TOKEN" -o attachment "${{ steps.extract_url.outputs.url }}" || \
+          # Fallback to unauthenticated if needed
+          curl -L -o attachment "${{ steps.extract_url.outputs.url }}"
+      - name: Unarchive attachment
+        if: steps.extract_url.outputs.url != ''
+        run: |
+          if [[ "${{ steps.extract_url.outputs.url }}" == *.zip ]]; then
+            unzip -l attachment
+            unzip attachment -d extracted_files
+          elif [[ "${{ steps.extract_url.outputs.url }}" == *.tar.gz ]]; then
+            tar -tzvf attachment
+            mkdir -p extracted_files
+            tar -xzvf attachment -C extracted_files
+          else
+            echo "Unsupported archive format."
+            exit 1
+          fi
+      - name: List extracted files
+        if: steps.extract_url.outputs.url != ''
+        run: |
+          echo "Extracted files:"
+          ls -R extracted_files || echo "No files extracted."
+      - name: No attachment found
+        if: steps.extract_url.outputs.url == ''
+        run: echo "No supported attachment found in issue description."
