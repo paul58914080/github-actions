@@ -16,15 +16,22 @@ jobs:
           url=$(grep -oE 'https?://[^ ]+\.(zip|tar\.gz)' issue_body.txt | head -n 1)
           echo "Found URL: $url"
           echo "url=$url" >> $GITHUB_OUTPUT
-      - name: Download attachment (authenticated)
+      - name: Download attachment (authenticated with PAT)
         if: steps.extract_url.outputs.url != ''
         env:
-          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          # Try authenticated download first
-          curl -L -H "Authorization: Bearer $TOKEN" -o attachment "${{ steps.extract_url.outputs.url }}" || \
-          # Fallback to unauthenticated if needed
-          curl -L -o attachment "${{ steps.extract_url.outputs.url }}"
+          # Try authenticated download with PAT
+          curl -L -H "Authorization: Bearer $TOKEN" -o attachment "${{ steps.extract_url.outputs.url }}"
+      - name: Check if downloaded file is archive
+        if: steps.extract_url.outputs.url != ''
+        run: |
+          # Check if the file is a zip or tar.gz, not HTML (login page)
+          filetype=$(file --mime-type -b attachment)
+          if [[ "$filetype" == "text/html" ]]; then
+            echo "Download failed: received HTML (likely SSO login page). Ensure PAT has SSO enabled and access to attachments."
+            exit 1
+          fi
       - name: Unarchive attachment
         if: steps.extract_url.outputs.url != ''
         run: |
